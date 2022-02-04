@@ -1,13 +1,14 @@
 #########################################
 # Predicting AirBnB apartment prices    #
 #      City: Melbourne, Australia       #
+#            Data Cleaning              #
 #########################################
 
 
 
 # ------------------------------------------------------------------------------------------------------
 #### SET UP
-# It is advised to start a new session for every case study
+# It is advised to start a new session 
 # CLEAR MEMORY
 rm(list=ls())
 
