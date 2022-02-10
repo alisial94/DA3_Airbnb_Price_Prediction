@@ -110,7 +110,7 @@ data <- data %>%
 ## Create Numerical variables
 data <- data %>%
   mutate( usd_price = price*0.71) # AUD to USD conversion exchange rate on 
-                                  # 4th Feb 2022 as per google
+                                  # 4th Feb 2022 as per Google
 
 # clean number of bathrooms
 data <- data %>% rename(bathrooms = bathrooms_text)
@@ -192,7 +192,7 @@ data_clean <- data_clean %>%
 write_csv(data_clean, "Data/clean/melborne_listing_data_final_variables.csv")
 
 
-# Investegating  -------------------------------------------------------------------------
+# Investigating Variables  -------------------------------------------------------------------------
 
 ##################################
 # DESCRIBE
@@ -247,7 +247,7 @@ ggplot(data_clean, aes(n_accommodates)) +
   geom_histogram(binwidth = 0.5, fill = "navyblue", color = "white", size = 0.25) +
   theme_classic()
 
-g3 <- ggplot(df, aes(x=n_accommodates, y=price)) +
+g3 <- ggplot(data_clean, aes(x=n_accommodates, y=price)) +
   geom_point(size=1, colour="navyblue", shape=16, alpha = 0.6)+
   geom_smooth(method="loess", colour="red", se=FALSE)+
   labs(x= "Number of people accomodated",y="Price")+
@@ -294,7 +294,7 @@ data_clean %>%
   group_by(n_accommodates) %>% 
   summarise(num_bedrooms = mean(n_bedrooms, na.rm = T), min_bedrooms = min(n_bedrooms, na.rm = T), max_bedrooms = max(n_bedrooms, na.rm = T))
 
-#### I will create pooled categories -> 1, 2, and 3 (double check)
+#### I will create pooled categories -> 1, 2, and 3 
 ####  then impute accommodates/2 rounded to whole for missing
 
 
@@ -340,6 +340,7 @@ ggplot(data = data_clean, aes(x=n_review_scores_rating , y=price)) +
   theme_classic()
 
 #### I will pool the values as 0-4.5,4.5-5
+#### impute missing values with medians
 
 
 
@@ -585,7 +586,7 @@ data_clean <- data_clean %>%
          f_days_since_first_review=ifelse(is.na(f_days_since_first_review),1, f_days_since_first_review))
 
 
-to_filter <- sapply(v, function(x) sum(is.na(x)))
+to_filter <- sapply(data_clean, function(x) sum(is.na(x)))
 to_filter[to_filter > 0]
 
 

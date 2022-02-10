@@ -38,8 +38,8 @@ library(gbm)
 
 data <- read_csv("https://raw.githubusercontent.com/alisial94/DA3_Airbnb_Price_Prediction/main/Data/clean/melborne_prepared.csv")
 
-source("da_helper_function.R")
-source("theme_bg.R")
+source("Codes/da_helper_function.R")
+source("Codes/theme_bg.R")
 
 # where do we have missing values now?
 to_filter <- sapply(data, function(x) sum(is.na(x)))
@@ -77,7 +77,7 @@ reviews <- c("f_review_score_rating","n_reviews_per_month","flag_review_scores_r
              "flag_days_since_first_review","ln_days_since_first_review","ln_number_of_reviews")
 host <- c("f_host_response_time","p_host_response_rate","p_host_acceptance_rate","d_host_greets_you",
             "d_host_is_superhost","d_host_identity_verified","flag_host_acceptance_rate",
-            "flag_host_response_rate","flag_host_response_time")
+            "flag_host_response_rate","flag_host_response_time") #24
 ammenities <- c("d_bath_tub","d_building_staff","d_carbon_monoxide_alarm","d_cleaning_products","d_dining_table",
                 "d_drying_rack_for_clothing","d_elevator","d_essentials","d_extra_pillows_and_blankets",
                 "d_fire_extinguisher","d_have_first_aid","d_hangers","d_hot_water","d_hot_water_kettle",
@@ -176,8 +176,8 @@ interactions <- c("f_property_type*d_bath_tub",
 # Create test and train samples #
 #################################
 # now all stuff runs on training vs test (holdout), alternative: 4-fold CV
-# create test and train samples (70% of observations in train sample)
-smp_size <- floor(0.7 * nrow(data))
+# create test and train samples (80% of observations in train sample)
+smp_size <- floor(0.8 * nrow(data))
 ## K = 5
 k_folds <- 5
 # Define seed value
@@ -185,12 +185,20 @@ seed_val <- 200
 train_ids <- sample(seq_len(nrow(data)), size = smp_size)
 data$train <- 0
 data$train[train_ids] <- 1
+
 # Create train and test sample variables
-data_train <- data %>% filter(train == 1)
-data_test <- data %>% filter(train == 0)                  
+
+#data_train <- data %>% filter(train == 1)
+#data_test <- data %>% filter(train == 0)                  
+#  - to avoid every time this data to change when you run the entire script which was causing alot of issue for me later, I have decided to save 
+# them and call them directly from GitHub
+
+#write_csv(data_train,"Data/clean/melborne_train.csv")
+#write_csv(data_test,"Data/clean/melborne_test.csv")
                   
-                  
-  
+data_train <- read_csv("https://raw.githubusercontent.com/alisial94/DA3_Airbnb_Price_Prediction/main/Data/clean/melborne_train.csv") 
+data_test <- read.csv("https://raw.githubusercontent.com/alisial94/DA3_Airbnb_Price_Prediction/main/Data/clean/melborne_test.csv")
+ 
 #Bulding the most complex model to use in LASSO
 model4 <- paste0(" ~ ",paste(c(basic_lev, reviews, host, ammenities, interactions),collapse = " + "))                
                   
@@ -254,40 +262,43 @@ lasso_add <- tibble(Model='LASSO', Coefficients=nrow(lasso_coeffs_nz),
 # modifying the list of variables to be used based on LASSO results 
 basic_lev <- c("f_property_type","n_accommodates","f_neighbourhood_cleansed","f_bathroom",
                "f_bedroom","d_flag_bedrooms","f_minimum_nights")
-host <- c("f_host_response_time","p_host_response_rate","p_host_acceptance_rate","d_host_greets_you", #"d_host_identity_verified",
+host <- c("f_host_response_time","p_host_acceptance_rate", "d_host_identity_verified",
           "d_host_is_superhost","flag_host_acceptance_rate","flag_host_response_rate","flag_host_response_time")
-reviews <- c("f_review_score_rating","flag_review_scores_rating","ln_days_since_first_review","ln_number_of_reviews",
+reviews <- c("ln_days_since_first_review","ln_number_of_reviews",
              "flag_days_since_first_review")
-ammenities <- c("d_carbon_monoxide_alarm","d_elevator","d_fire_extinguisher","d_hangers",
+ammenities <- c("d_drying_rack_for_clothing","d_elevator","d_essentials","d_fire_extinguisher","d_hangers",
                 "d_hot_water_kettle","d_microwave","d_outdoor_furniture","d_private_entrance",
-                "d_smart_lock","d_security_cameras_on_property","d_have_pool","d_smoke_alarm","d_have_oven",
-                "d_coffee_machine","d_wifi","d_tv","d_have_iron","d_have_heating", "d_cooling",  
-                "d_have_breakfast",  "d_free_parking","d_family_friendly", 
-                "d_shampoo_conditioner","d_have_washer","d_have_dryer", "d_clothing_storage",
-                "d_cutlary_glasses", "d_laundromat_nearby","d_have_kitchen","d_refrigerator","d_garden",
-                "d_bathroom_essentials")
+                "d_smart_lock","d_security_cameras_on_property","d_smoke_alarm","d_have_oven",
+                "d_coffee_machine","d_tv","d_have_iron", "d_balcony",
+                "d_have_breakfast",  "d_paid_parking", 
+                "d_have_workspace","d_have_washer","d_have_dryer", "d_streaming_services",
+                "d_cutlary_glasses", "d_luggage_dropoff_allowed","d_shampoo_conditioner","d_refrigerator","d_garden"
+                )
 interactions <- c("f_property_type*d_bath_tub",
                   "f_property_type*d_building_staff",
                   "f_property_type*d_elevator",
                   "f_property_type*d_extra_pillows_and_blankets",
                   "f_property_type*d_fire_extinguisher",
-                  "f_property_type*d_hangers",
+                  #"f_property_type*d_hangers",
                   "f_property_type*d_hot_water_kettle",
-                  "f_property_type*d_laundromat_nearby",
-                  "f_property_type*d_outdoor_dining_area",
+                  #"f_property_type*d_laundromat_nearby",
+                  #"f_property_type*d_outdoor_dining_area",
                   "f_property_type*d_outdoor_furniture",
                   "f_property_type*d_private_entrance",
                   "f_property_type*d_security_cameras_on_property",
                   "f_property_type*d_have_kitchen",
+                  "f_property_type*d_refrigerator",
+                  "f_property_type*d_wifi",
                   "f_property_type*d_coffee_machine",
                   "f_property_type*d_bbq_equipment",
+                  "f_property_type*d_tv",
                   "f_property_type*d_balcony",
                   "f_property_type*d_garden",
                   "f_property_type*d_family_friendly",
                   "f_property_type*d_bathroom_essentials",
                   "f_property_type*d_body_wash",
                   "f_property_type*d_have_iron",
-                  "f_property_type*d_cooling",
+                  #"f_property_type*d_cooling",
                   "f_property_type*d_have_workspace",
                   "f_property_type*d_linens")
 
@@ -348,6 +359,11 @@ for ( i in 1:4 ){
 model_results <- rbind( model_results , lasso_add )
 model_results
 
+ols_result<- model_results %>%
+  kbl(caption = "OLS Regression", escape = FALSE) %>%
+  kable_classic(full_width = F, html_font = "Cambria") %>%
+  kable_styling( position = "center")
+
 # Based on the results, model4 is clearly over fitted. The table shows that  R-squared comes out to be 1 with a 
 # negative BIC. Model4 was primarily used as a model to be used in LASSO to identify 
 # predictors with non-zero coefficients. Therefor, I decided to add all relevant variables.
@@ -398,6 +414,17 @@ system.time({
   )
 })
 rf_model
+
+rf_tuning_model_table <- rf_model$results %>%
+  dplyr::select(mtry, min.node.size, RMSE) %>%
+  dplyr::rename(nodes = min.node.size) %>%
+  spread(key = mtry, value = RMSE)
+
+rf_tuning_model_table %>%
+  kbl(caption  = "Tuned RF") %>%
+  kable_minimal(full_width = F, html_font = "Cambria")
+
+
 # auto tuning random forest 
 set.seed(1200)
 system.time({
@@ -412,6 +439,14 @@ system.time({
 })
 rf_model_auto
 
+rf_model_auto_table <- rf_model_auto$results %>%
+  dplyr::select(mtry, 5, RMSE) %>%
+  #dplyr::rename(nodes = min.node.size) %>%
+  spread(key = mtry, value = RMSE)
+
+rf_model_auto_table %>%
+  kbl(caption  = "Auto Tuned RF") %>%
+  kable_minimal(full_width = F, html_font = "Cambria")
 ##############################
 # Variable Importance Plots  #
 ##############################
@@ -465,14 +500,16 @@ f_reviews_varnames <- grep("review",varnames, value = TRUE)
         #                "d_refrigerator","d_bbq_equipment", "d_garden", "d_family_friendly","d_bathroom_essentials",                                           
          #               "d_body_wash")
 
-amenities_varnames <- c("d_carbon_monoxide_alarm","d_elevator","d_fire_extinguisher","d_hangers", "d_hot_water_kettle",                                              
-                        "d_microwave", "d_outdoor_furniture", "d_private_entrance", "d_smart_lock", "d_security_cameras_on_property",                                  
-                        "d_have_pool", "d_smoke_alarm", "d_have_oven", "d_coffee_machine", "d_wifi", "d_tv", "d_have_iron",                                                     
-                        "d_have_heating", "d_cooling", "d_have_breakfast", "d_free_parking" , "d_family_friendly" ,                                              
-                        "d_shampoo_conditioner", "d_have_washer", "d_have_dryer", "d_clothing_storage","d_cutlary_glasses",                                               
-                        "d_laundromat_nearby","d_have_kitchen","d_refrigerator","d_garden", "d_bathroom_essentials" ,                                          
-                        "d_bath_tub", "d_building_staff", "d_extra_pillows_and_blankets", "d_outdoor_dining_area",                                           
-                        "d_bbq_equipment", "d_balcony" , "d_body_wash", "d_have_workspace", "d_linens" )
+amenities_varnames <- c("d_bath_tub", "d_building_staff","d_carbon_monoxide_alarm",  "d_cleaning_products", 
+                        "d_dining_table", "d_drying_rack_for_clothing", "d_elevator", "d_essentials","d_extra_pillows_and_blankets",                                    
+                        "d_fire_extinguisher", "d_have_first_aid","d_hangers","d_hot_water","d_hot_water_kettle", "d_laundromat_nearby",                                             
+                        "d_microwave","d_outdoor_dining_area","d_outdoor_furniture" , "d_private_entrance" ,  "d_roomdarkening_shades",                                          
+                        "d_smart_lock", "d_security_cameras_on_property", "d_have_pool","d_smoke_alarm",  "d_have_kitchen", "d_have_stove",                                                    
+                        "d_have_oven","d_refrigerator" ,  "d_coffee_machine", "d_wifi",  "d_bbq_equipment", "d_tv", "d_have_iron",                                                     
+                        "d_have_heating", "d_cooling","d_balcony","d_garden","d_have_breakfast","d_have_workspace" ,"d_family_friendly",                                               
+                        "d_luggage_dropoff_allowed","d_single_level_home","d_bathroom_essentials","d_free_parking", "d_paid_parking",                                                  
+                        "d_linens","d_streaming_services", "d_shampoo_conditioner", "d_body_wash", "d_have_washer",  "d_have_dryer",                                                    
+                        "d_clothing_storage", "d_cutlary_glasses")
 
 
 groups <- list(Neighbourhood = f_neighbourhood_cleansed,
@@ -551,14 +588,16 @@ f_neighbourhood_cleansed_auto <- grep("f_neighbourhood_cleansed",varnames, value
 f_host_varnames_auto <- grep(("host"),varnames, value = TRUE)
 f_property_type_varnames_auto <- grep("f_property_type",varnames, value = TRUE)
 f_reviews_varnames_auto <- grep("review",varnames, value = TRUE)
-amenities_varnames_auto <- c("d_carbon_monoxide_alarm","d_elevator","d_fire_extinguisher","d_hangers", "d_hot_water_kettle",                                              
-                             "d_microwave", "d_outdoor_furniture", "d_private_entrance", "d_smart_lock", "d_security_cameras_on_property",                                  
-                             "d_have_pool", "d_smoke_alarm", "d_have_oven", "d_coffee_machine", "d_wifi", "d_tv", "d_have_iron",                                                     
-                             "d_have_heating", "d_cooling", "d_have_breakfast", "d_free_parking" , "d_family_friendly" ,                                              
-                             "d_shampoo_conditioner", "d_have_washer", "d_have_dryer", "d_clothing_storage","d_cutlary_glasses",                                               
-                             "d_laundromat_nearby","d_have_kitchen","d_refrigerator","d_garden", "d_bathroom_essentials" ,                                          
-                             "d_bath_tub", "d_building_staff", "d_extra_pillows_and_blankets", "d_outdoor_dining_area",                                           
-                             "d_bbq_equipment", "d_balcony" , "d_body_wash", "d_have_workspace", "d_linens")
+amenities_varnames_auto <- c("d_bath_tub", "d_building_staff","d_carbon_monoxide_alarm",  "d_cleaning_products", 
+                             "d_dining_table", "d_drying_rack_for_clothing", "d_elevator", "d_essentials","d_extra_pillows_and_blankets",                                    
+                             "d_fire_extinguisher", "d_have_first_aid","d_hangers","d_hot_water","d_hot_water_kettle", "d_laundromat_nearby",                                             
+                             "d_microwave","d_outdoor_dining_area","d_outdoor_furniture" , "d_private_entrance" ,  "d_roomdarkening_shades",                                          
+                             "d_smart_lock", "d_security_cameras_on_property", "d_have_pool","d_smoke_alarm",  "d_have_kitchen", "d_have_stove",                                                    
+                             "d_have_oven","d_refrigerator" ,  "d_coffee_machine", "d_wifi",  "d_bbq_equipment", "d_tv", "d_have_iron",                                                     
+                             "d_have_heating", "d_cooling","d_balcony","d_garden","d_have_breakfast","d_have_workspace" ,"d_family_friendly",                                               
+                             "d_luggage_dropoff_allowed","d_single_level_home","d_bathroom_essentials","d_free_parking", "d_paid_parking",                                                  
+                             "d_linens","d_streaming_services", "d_shampoo_conditioner", "d_body_wash", "d_have_washer",  "d_have_dryer",                                                    
+                             "d_clothing_storage", "d_cutlary_glasses")
 
 groups_auto <- list(Neighbourhood = f_neighbourhood_cleansed,
                Host_Related=f_host_varnames,
@@ -622,7 +661,7 @@ library(rpart)
 library(rpart.plot)
 
 # Tree graph
-rpart.plot(cart_model$finalModel, tweak=1.2, digits=-1, extra=1)
+rpart.plot(cart_model$finalModel, tweak=1.2, digits=-1, extra=1) 
 
 
 # GBM
@@ -657,15 +696,21 @@ final_models <-
 results <- resamples(final_models) %>% summary()
 results
 
+# Evaluating both data sets
+result_r2 <- imap(final_models, ~{
+  mean(results$values[[paste0(.y,"~Rsquared")]])
+}) %>% unlist() %>% as.data.frame() %>%
+  rename("CV Rsquared" = ".")
 
+result_r2
 
 # Model selection is carried out on this CV RMSE
 
-result <- imap(final_models, ~{
+result_rmse <- imap(final_models, ~{
   mean(results$values[[paste0(.y,"~RMSE")]])
 }) %>% unlist() %>% as.data.frame() %>%
   rename("CV RMSE" = ".")
-result
+result_rmse
 
 
 # evaluate preferred model on the holdout set -----------------------------
@@ -674,6 +719,12 @@ result_2 <- map(final_models, ~{
 }) %>% unlist() %>% as.data.frame() %>%
   rename("Holdout RMSE" = ".")
 result_2
+
+final_result4_5 <- cbind(result_r2, result_rmse, result_2)
+
+final_result4_5 %>%
+  kbl() %>%
+  kable_minimal(full_width = F, html_font = "Cambria")
 
 
 
@@ -703,18 +754,17 @@ pdp_n_accommodates %>%
   geom_point(color='red', size=4) +
   ylab("Predicted price") +
   xlab("Accommodates (persons)") +
-  scale_y_continuous(limits=c(125,150), breaks=seq(125,150, by=10)) +
   theme_bw()
 
 # 3) Neighborhood Cleansed
-pdp_f_neighbourhood_cleansed <- pdp::partial(rf_model_auto, pred.var = "f_neighbourhood_cleansed", 
-                                   pred.grid = distinct_(data_test, "f_neighbourhood_cleansed"), 
+pdp_f_neighbourhood_cleansed <- pdp::partial(rf_model_auto, pred.var = "f_bedroom", 
+                                   pred.grid = distinct_(data_test, "f_bedroom"), 
                                    train = data_train)
 pdp_f_neighbourhood_cleansed %>%
   autoplot( ) +
   geom_point(color='red', size=4) +
   ylab("Predicted price") +
-  xlab("Neighbourhoods") +
+  xlab("Number of Bedrooms") +
   theme_bw()
 
 
@@ -742,17 +792,17 @@ data_holdout_w_prediction %>%
   summarise(cnt = n())
 
 b <- data_holdout_w_prediction %>%
-  filter(f_municipality %in% c("Heraklion", "Khania",
-                               "Lasithi", "Rethymnon")) %>%
-  group_by(f_municipality) %>%
+  filter(f_neighbourhood_cleansed %in% c("Melbourne", "Port Phillip",
+                               "Stonnington", "Yarra")) %>%
+  group_by(f_neighbourhood_cleansed) %>%
   dplyr::summarise(
     rmse = RMSE(predicted_price, price),
     mean_price = mean(price),
     rmse_norm = rmse / mean_price
   )
 c <- data_holdout_w_prediction %>%
-  filter(n_beds %in% c("2","3", "4","5","6","7","8")) %>%
-  group_by(n_beds) %>%
+  filter(f_beds %in% c("1","2","3")) %>%
+  group_by(f_beds) %>%
   dplyr::summarise(
     rmse = RMSE(predicted_price, price),
     mean_price = mean(price),
@@ -765,7 +815,7 @@ d <- data_holdout_w_prediction %>%
     rmse_norm = RMSE(predicted_price, price) / mean(price)
   )
 e <- data_holdout_w_prediction %>%
-  filter(f_property_type %in% c("Entire loft", "Entire serviced apartment")) %>%
+  filter(f_property_type %in% c("Condo","Loft", "Serviced_apartment")) %>%
   group_by(f_property_type) %>%
   dplyr::summarise(
     rmse = RMSE(predicted_price, price),
@@ -773,3 +823,58 @@ e <- data_holdout_w_prediction %>%
     rmse_norm = rmse / mean_price
   )
 
+# Save output
+colnames(a) <- c("", "RMSE", "Mean price", "RMSE/price")
+colnames(b) <- c("", "RMSE", "Mean price", "RMSE/price")
+colnames(c) <- c("", "RMSE", "Mean price", "RMSE/price")
+d<- cbind("All", d)
+colnames(d) <- c("", "RMSE", "Mean price", "RMSE/price")
+colnames(e) <- c("", "RMSE", "Mean price", "RMSE/price")
+
+
+line1 <- c("Apartment size", "", "", "")
+line2 <- c("Borough", "", "", "")
+line3 <- c("Number of Beds", "", "", "")
+line4 <- c("Type","","","")
+
+result_final <- rbind(line1, a, line2, b, line3, c, line4,e, d) %>%
+  transform(RMSE = as.numeric(RMSE), `Mean price` = as.numeric(`Mean price`),
+            `RMSE/price` = as.numeric(`RMSE/price`))
+
+result_final
+
+result_final %>%
+  kbl() %>%
+  kable_minimal(full_width = F, html_font = "Cambria")
+
+
+# FIGURES FOR FITTED VS ACTUAL OUTCOME VARIABLES #
+##--------------------------------------------------
+
+Ylev <- data_test[["price"]]
+
+data_holdout_w_prediction <- data_test %>%
+  mutate(predicted_price = predict(rf_model_auto, newdata = data_test))
+
+
+# Predicted values
+prediction_holdout_pred <- as.data.frame(predict(rf_model, newdata = data_test, interval="predict"))
+
+predictionlev_holdout <- cbind(data_test[,c("price","n_accommodates")],
+                               prediction_holdout_pred)
+
+
+
+# Create data frame with the real and predicted values
+d <- data.frame(ylev=Ylev, predlev=predictionlev_holdout[,3] )
+# Check the differences
+d$elev <- d$ylev - d$predlev
+
+# Plot predicted vs price
+level_vs_pred <- ggplot(data = d) +
+  geom_point(aes(y=ylev, x=predlev), color = "#440154", size = 1,
+             shape = 16, alpha = 0.5, show.legend=FALSE, na.rm=TRUE) +
+  geom_segment(aes(x = 0, y = 0, xend = 350, yend =350), size=0.8, color="black", linetype=2) +
+  labs(y = "Price (US dollars)", x = "Predicted price  (US dollars)") +
+  theme_bw()
+level_vs_pred
